@@ -26,8 +26,6 @@ var GoogleSpreadsheet = function( ss_key, auth_id, options ){
 
   options = options || {};
 
-
-
   if ( !ss_key ) {
     throw new Error("Spreadsheet key not provided.");
   }
@@ -77,6 +75,22 @@ var GoogleSpreadsheet = function( ss_key, auth_id, options ){
     return !!google_auth;
   }
 
+  function promisify(fn) {
+    return function() {
+      return new Promise((resolve, reject) => {
+        var args = Array.from(arguments);
+        var callback = args.pop();
+        if (typeof callback !== "function") {
+          args.push(function(err, data) {
+            if (err) return reject(err);
+            return resolve(data);
+          });
+          return fn.apply(self, args);
+        }
+        fn.apply(self, arguments)
+      });
+    }
+  }
 
   function setAuthAndDependencies( auth ) {
     google_auth = auth;
@@ -185,10 +199,8 @@ var GoogleSpreadsheet = function( ss_key, auth_id, options ){
     });
   }
 
-
-
   // public API methods
-  this.getInfo = function( cb ){
+  this.getInfo = promisify(function( cb ){
     self.makeFeedRequest( ["worksheets", ss_key], 'GET', null, function(err, data) {
       if ( err ) return cb( err );
       if (data===true) {
@@ -209,11 +221,11 @@ var GoogleSpreadsheet = function( ss_key, auth_id, options ){
       self.worksheets = ss_data.worksheets;
       cb( null, ss_data );
     });
-  }
+  })
 
   // NOTE: worksheet IDs start at 1
 
-  this.addWorksheet = function( opts, cb ) {
+  this.addWorksheet = promisify(function( opts, cb ) {
     // make opts optional
     if (typeof opts == 'function'){
       cb = opts;
@@ -255,15 +267,15 @@ var GoogleSpreadsheet = function( ss_key, auth_id, options ){
         cb(err, sheet);
       })
     });
-  }
+  })
 
-  this.removeWorksheet = function ( sheet_id, cb ){
+  this.removeWorksheet = promisify(function ( sheet_id, cb ){
     if (!this.isAuthActive()) return cb(new Error(REQUIRE_AUTH_MESSAGE));
     if (sheet_id instanceof SpreadsheetWorksheet) return sheet_id.del(cb);
     self.makeFeedRequest( GOOGLE_FEED_URL + "worksheets/" + ss_key + "/private/full/" + sheet_id, 'DELETE', null, cb );
-  }
+  })
 
-  this.getRows = function( worksheet_id, opts, cb ){
+  this.getRows = promisify(function( worksheet_id, opts, cb ){
     // the first row is used as titles/keys and is not included
 
     // opts is optional
@@ -314,9 +326,9 @@ var GoogleSpreadsheet = function( ss_key, auth_id, options ){
       });
       cb(null, rows);
     });
-  }
+  })
 
-  this.addRow = function( worksheet_id, data, cb ){
+  this.addRow = promisify(function( worksheet_id, data, cb ){
     var data_xml = '<entry xmlns="http://www.w3.org/2005/Atom" xmlns:gsx="http://schemas.google.com/spreadsheets/2006/extended">' + "\n";
     Object.keys(data).forEach(function(key) {
       if (key != 'id' && key != 'title' && key != 'content' && key != '_links'){
@@ -330,9 +342,9 @@ var GoogleSpreadsheet = function( ss_key, auth_id, options ){
       var row = new SpreadsheetRow(self, data, entries_xml[0]);
       cb(null, row);
     });
-  }
+  })
 
-  this.getCells = function (worksheet_id, opts, cb) {
+  this.getCells = promisify(function (worksheet_id, opts, cb) {
     // opts is optional
     if (typeof( opts ) == 'function') {
       cb = opts;
@@ -359,7 +371,7 @@ var GoogleSpreadsheet = function( ss_key, auth_id, options ){
 
       cb( null, cells );
     });
-  }
+  })
 };
 
 // Classes
