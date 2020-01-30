@@ -433,13 +433,13 @@ var SpreadsheetWorksheet = function( spreadsheet, data ){
   }
 
   this.getRows = function(opts, cb){
-    spreadsheet.getRows(self.id, opts, cb);
+    return spreadsheet.getRows(self.id, opts, cb);
   }
   this.getCells = function(opts, cb) {
-    spreadsheet.getCells(self.id, opts, cb);
+    return spreadsheet.getCells(self.id, opts, cb);
   }
   this.addRow = function(data, cb){
-    spreadsheet.addRow(self.id, data, cb);
+    return spreadsheet.addRow(self.id, data, cb);
   }
   this.bulkUpdateCells = function(cells, cb) {
     if ( !cb ) cb = function(){};
@@ -462,7 +462,7 @@ var SpreadsheetWorksheet = function( spreadsheet, data ){
     });
   }
   this.del = function(cb){
-    spreadsheet.makeFeedRequest(self['_links']['edit'], 'DELETE', null, cb);
+    return spreadsheet.makeFeedRequest(self['_links']['edit'], 'DELETE', null, cb);
   }
 
   this.setHeaderRow = function(values, cb) {
